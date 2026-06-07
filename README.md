@@ -9,6 +9,21 @@ justificada.
 
 Repositório: https://github.com/GuilhermeBars/foodflow
 
+## Integrantes
+
+Disciplina 12452 (Padrões e Arquitetura de Software), Curso de Engenharia de
+Software da PUC-Campinas. Professor: Prof. Dr. Douglas Henrique Siqueira Abreu.
+
+| Integrante | RA |
+|------------|-----|
+| Felipe Cosmo Granziol | 24021602 |
+| Guilherme Bars | 24014122 |
+| Gustavo Kurten | 24008150 |
+| Henrique Gambin | 24013762 |
+| João Celso | 24012463 |
+| Pedro Tiezo Sales Shimizu | 24005158 |
+| Vitor Hugo Barbosa | 24018852 |
+
 ## O problema
 
 Um pedido de delivery atravessa várias responsabilidades que costumam virar um
