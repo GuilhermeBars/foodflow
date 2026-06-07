@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FoodFlow - Trabalho Final</title>
+<style>
+  @page { size: A4; margin: 2.2cm 2cm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 11pt; line-height: 1.5; color: #1a1a1a; margin: 0;
+    text-align: justify;
+  }
+  h1 { font-size: 17pt; color: #11366b; border-bottom: 2px solid #11366b;
+       padding-bottom: 4px; margin-top: 0; page-break-before: always; }
+  h1.first { page-break-before: avoid; }
+  h2 { font-size: 13pt; color: #16407a; margin-top: 18px; }
+  h3 { font-size: 11.5pt; color: #16407a; margin-top: 14px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { font-family: "SF Mono", "Consolas", monospace; font-size: 9.2pt;
+         background: #f1f3f6; padding: 1px 3px; border-radius: 3px; }
+  pre { background: #f6f8fa; border: 1px solid #dfe2e7; border-radius: 5px;
+        padding: 10px 12px; overflow: hidden; page-break-inside: avoid; }
+  pre code { background: none; padding: 0; font-size: 8.8pt; line-height: 1.35;
+             white-space: pre-wrap; word-break: break-word; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.6pt; margin: 10px 0; }
+  th, td { border: 1px solid #cdd3da; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef1f6; color: #11366b; }
+  img.diagram { max-width: 100%; display: block; margin: 12px auto; page-break-inside: avoid;
+                border: 1px solid #e2e5ea; }
+  .caption { text-align: center; font-size: 9pt; color: #555; margin-top: -4px; margin-bottom: 14px; }
+  .sumario li { margin: 4px 0; }
+  .meta { color: #444; font-size: 10pt; }
+  a { color: #11366b; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<h1 class="first">Sumário</h1>
+<ol class="sumario">
+  <li>Introdução</li>
+  <li>Atributos de Qualidade e Decisões Arquiteturais</li>
+  <li>Estilo Arquitetural</li>
+  <li>Aplicação dos Princípios SOLID</li>
+  <li>Clean Code</li>
+  <li>Padrões de Projeto GoF</li>
+  <li>Design de API</li>
+  <li>Diagramas e Modelos</li>
+  <li>Conclusões</li>
+  <li>Referências Bibliográficas</li>
+</ol>
+<p class="meta">Repositório do projeto:
+<a href="https://github.com/GuilhermeBars/foodflow">https://github.com/GuilhermeBars/foodflow</a></p>
+
+<h1>1. Introdução</h1>
+<p>O FoodFlow é uma plataforma de delivery. Restaurantes publicam seu cardápio,
+clientes montam um pedido, o sistema calcula o total, cobra o pagamento e
+acompanha o pedido do momento em que é feito até a entrega. O escopo foi
+delimitado de propósito a esse núcleo, porque ele já reúne os problemas que
+interessam à disciplina: um fluxo que atravessa vários contextos, regras de
+negócio com estado, integração com serviços externos e uma API pública.</p>
+
+<p>A justificativa para o tema é que um pedido de delivery concentra, num único
+caso de uso, decisões que normalmente viram um amontoado de condicionais: checar
+o cardápio, somar itens, aplicar frete e desconto, cobrar, controlar em que ponto
+o pedido está e avisar os interessados. É exatamente o tipo de problema em que
+arquitetura e padrões de projeto deixam de ser teoria e passam a pagar a conta.</p>
+
+<h2>1.1 Objetivos</h2>
+<p>O objetivo geral é construir um software funcional que demonstre, de forma
+verificável no código, os conceitos centrais da disciplina. Os objetivos
+específicos são:</p>
+<ul>
+  <li>Separar o sistema em módulos com fronteiras claras e justificar o estilo
+      arquitetural adotado.</li>
+  <li>Aplicar os cinco princípios SOLID em pontos concretos do código.</li>
+  <li>Empregar pelo menos três padrões GoF onde eles resolvam um problema real.</li>
+  <li>Expor uma API REST especificada formalmente em OpenAPI.</li>
+  <li>Registrar as decisões arquiteturais em ADRs e mantê-las versionadas.</li>
+</ul>
+
+<h2>1.2 Problema e público-alvo</h2>
+<p>O problema que o sistema resolve é coordenar, de forma confiável, o ciclo de um
+pedido de delivery entre cliente, restaurante e pagamento. O público-alvo são os
+clientes, que fazem e acompanham pedidos, e os restaurantes, que mantêm o cardápio
+e veem os pedidos chegarem. A API é o ponto de entrada para um aplicativo ou site
+que consuma esses dados.</p>
+
+<h1>2. Atributos de Qualidade e Decisões Arquiteturais</h1>
+
+<h2>2A. Atributos de qualidade prioritários</h2>
+<p>À luz da ISO/IEC 25010:2023, três atributos foram tratados como prioritários.
+A escolha não é genérica: ela reflete o que mais pesa neste sistema e no contexto
+de uma equipe de estudantes com prazo curto.</p>
+
+<h3>Manutenibilidade</h3>
+<p>É o atributo mais importante aqui. O trabalho existe para demonstrar
+arquitetura e boas práticas, e a equipe vai evoluir o código ao longo do semestre.
+Um sistema difícil de mudar inviabilizaria tanto o aprendizado quanto a entrega.
+As decisões que respondem a isso são a divisão em módulos com fronteiras
+explícitas, a organização interna em Clean Architecture (domínio sem framework) e
+a inversão de dependência via portas. Como métrica observável, mantivemos uma
+suíte de 29 testes automatizados e o domínio testável sem subir o Spring, o que
+permite verificar regras de negócio em milissegundos.</p>
+
+<h3>Confiabilidade</h3>
+<p>Um pedido não pode pular etapas nem ser cobrado duas vezes. Escolhemos
+confiabilidade no lugar de, por exemplo, usabilidade, porque a corretude do fluxo
+é o que dá credibilidade a uma plataforma de delivery. As decisões que respondem a
+isso são a máquina de estados do pedido, que rejeita qualquer transição inválida,
+e a idempotência da cobrança por chave. Como métrica, toda transição inválida
+resulta em erro de negócio explícito (HTTP 409), e a mesma chave de idempotência
+nunca gera duas cobranças, o que é coberto por teste.</p>
+
+<h3>Eficiência de desempenho</h3>
+<p>O caminho de criar um pedido deve ser curto e previsível. As decisões que
+respondem a isso são a paginação obrigatória nas listagens e a saída das
+notificações do caminho da requisição, processadas por eventos de domínio. Como
+alvo observável, definimos uma latência de referência abaixo de 300 ms (p95) para
+a criação de um pedido no ambiente local e respostas de listagem limitadas pelo
+tamanho de página.</p>
+
+<h2>2B. Registro de Decisões Arquiteturais (ADRs)</h2>
+<p>As decisões estão registradas na pasta <code>/adrs</code> do repositório, no
+formato canônico de Michael Nygard (status, contexto, decisão e consequências).
+São sete ADRs:</p>
+<table>
+  <tr><th>ADR</th><th>Decisão</th><th>Status</th></tr>
+  <tr><td>001</td><td>Monólito modular em vez de microsserviços</td><td>Accepted</td></tr>
+  <tr><td>002</td><td>Clean Architecture / Hexagonal por módulo</td><td>Accepted</td></tr>
+  <tr><td>003</td><td>PostgreSQL em produção, H2 em dev e testes</td><td>Accepted</td></tr>
+  <tr><td>004</td><td>Status do pedido como enum + switch</td><td>Superseded por 005</td></tr>
+  <tr><td>005</td><td>Padrão State para o ciclo de vida do pedido</td><td>Accepted</td></tr>
+  <tr><td>006</td><td>Comunicação entre módulos por eventos de domínio</td><td>Accepted</td></tr>
+  <tr><td>007</td><td>REST + OpenAPI com versionamento por URL</td><td>Accepted</td></tr>
+</table>
+<p>A dupla ADR-004 e ADR-005 registra uma decisão revertida durante o
+desenvolvimento. A primeira modelagem do status do pedido usava um <code>enum</code>
+com <code>switch</code> espalhado pelos serviços. Na prática isso espalhou a regra
+de transição, baixou a coesão e violava o princípio Aberto/Fechado, então a
+decisão foi substituída pelo padrão State.</p>
+
+<h1>3. Estilo Arquitetural</h1>
+
+<h2>3A. Plano macro: unidades implantáveis</h2>
+<p>O sistema é um monólito modular: um único artefato para subir, dividido
+internamente em módulos com fronteiras explícitas. A escolha foi deliberada e está
+ligada aos atributos da seção 2A e à maturidade da equipe.</p>
+<p>Microsserviços resolveriam um problema que não temos: escala independente por
+serviço. Em troca, cobrariam um preço alto em complexidade operacional (deploys
+separados, comunicação por rede, consistência distribuída, observabilidade). Para
+uma equipe de estudantes com prazo curto, e priorizando manutenibilidade e
+confiabilidade, esse preço não se paga. O monólito ainda nos dá transações locais
+ACID no fluxo de pedido, que é onde mais precisamos de consistência. A
+modularidade preserva o caminho de evolução: como cada módulo já conversa por
+portas, um deles pode ser extraído para um serviço se um dia houver essa
+necessidade.</p>
+
+<h2>3B. Plano interno: organização do código</h2>
+<p>Dentro do monólito, cada módulo segue Clean Architecture / Hexagonal. A regra é
+simples: a dependência sempre aponta para dentro, em direção ao domínio. As
+camadas são:</p>
+<ul>
+  <li><code>domain</code>: modelo de domínio puro (entidades, objetos de valor,
+      eventos, exceções). Sem Spring, sem JPA.</li>
+  <li><code>application</code>: portas de entrada (<code>port.in</code>, casos de
+      uso), portas de saída (<code>port.out</code>, repositórios e gateways) e os
+      serviços que as orquestram.</li>
+  <li><code>infrastructure</code>: adaptadores que implementam as portas de saída
+      (entidades JPA, mapeadores, integrações).</li>
+  <li><code>web</code>: controladores REST e DTOs.</li>
+</ul>
+<p>Os módulos são <code>shared</code>, <code>catalog</code>, <code>ordering</code>,
+<code>pricing</code>, <code>payment</code> e <code>notification</code>. A visão de
+containers (C4 nível 2) está na seção 8.</p>
+
+<h1>4. Aplicação dos Princípios SOLID</h1>
+
+<h3>Responsabilidade Única (SRP)</h3>
+<p>Cada classe tem um motivo para mudar. O cálculo do preço, por exemplo, vive
+apenas em <code>OrderPricing</code>, que combina frete e desconto e nada mais. Ele
+não conhece persistência, pagamento ou web.</p>
+<pre><code>public PriceQuote quote(Money subtotal, double distanceKm,
+                        DeliveryFeeStrategy deliveryFeeStrategy,
+                        DiscountStrategy discountStrategy) {
+    Money deliveryFee = deliveryFeeStrategy.calculate(subtotal, distanceKm);
+    Money payable = subtotal.add(deliveryFee);
+    Money requestedDiscount = discountStrategy.apply(subtotal);
+    Money discount = requestedDiscount.isGreaterThan(payable) ? payable : requestedDiscount;
+    return new PriceQuote(subtotal, deliveryFee, payable.subtract(discount));
+}</code></pre>
+<p>O efeito é que uma mudança na regra de preço fica contida nesse ponto, sem
+risco de respingar em outras partes do sistema.</p>
+
+<h3>Aberto/Fechado (OCP)</h3>
+<p>Adicionar uma nova política de frete não exige tocar em quem calcula o total.
+<code>OrderPricing</code> depende da interface <code>DeliveryFeeStrategy</code>;
+uma nova política é uma nova classe.</p>
+<pre><code>public interface DeliveryFeeStrategy {
+    Money calculate(Money subtotal, double distanceKm);
+}</code></pre>
+<p>Já existem três implementações (fixa, por distância e grátis acima de um limite)
+e nenhuma delas obrigou a alterar <code>OrderPricing</code>. O código fica aberto a
+extensão e fechado a modificação.</p>
+
+<h3>Substituição de Liskov (LSP)</h3>
+<p>Qualquer <code>DeliveryFeeStrategy</code> pode ocupar o lugar de outra sem
+quebrar o cálculo. <code>FreeAboveThresholdDeliveryFee</code> demonstra isso: ela é
+uma estratégia que, quando o subtotal não atinge o limite, delega a outra
+estratégia, e o resultado continua sendo um <code>Money</code> válido.</p>
+<pre><code>public Money calculate(Money subtotal, double distanceKm) {
+    if (subtotal.isGreaterThanOrEqual(threshold)) {
+        return Money.zero();
+    }
+    return below.calculate(subtotal, distanceKm);
+}</code></pre>
+<p>O contrato (devolver um valor de frete não negativo) é respeitado por todas as
+implementações, então elas são intercambiáveis.</p>
+
+<h3>Segregação de Interface (ISP)</h3>
+<p>Em vez de uma interface gorda de "serviço de catálogo", há portas de entrada
+pequenas e específicas. O controlador depende só do que usa.</p>
+<pre><code>public interface RegisterRestaurantUseCase {
+    Restaurant register(RegisterRestaurantCommand command);
+}
+public interface AddMenuItemUseCase {
+    MenuItem addItem(AddMenuItemCommand command);
+}
+public interface CatalogQuery {
+    Restaurant getRestaurant(UUID id);
+    List&lt;Restaurant&gt; listRestaurants();
+}</code></pre>
+<p>O <code>CatalogService</code> implementa as três, mas cada cliente enxerga apenas
+a interface de que precisa. Ninguém fica acoplado a métodos que não usa.</p>
+
+<h3>Inversão de Dependência (DIP)</h3>
+<p>O <code>OrderService</code> orquestra catálogo, preço, pagamento e persistência
+dependendo apenas de abstrações. As implementações concretas (adaptadores JPA,
+gateways) são injetadas.</p>
+<pre><code>public OrderService(CatalogQuery catalog,
+                    ProcessPaymentUseCase payment,
+                    OrderRepository orders,
+                    DomainEventPublisher events) { ... }</code></pre>
+<p>Nenhuma dessas dependências é uma classe concreta de infraestrutura. O domínio e
+a aplicação não conhecem JPA nem o gateway de pagamento: eles só conhecem portas.</p>
+
+<h1>5. Clean Code</h1>
+<p>As práticas de Clean Code aparecem ao longo de todo o código. Alguns exemplos:</p>
+
+<h3>Nomes claros</h3>
+<p>Os métodos do pedido dizem o que fazem no vocabulário do domínio:
+<code>order.confirm()</code>, <code>order.startPreparing()</code>,
+<code>order.dispatch()</code>, <code>order.deliver()</code>,
+<code>order.cancel()</code>. Não há <code>setStatus(int)</code> nem flags soltas.</p>
+
+<h3>Funções pequenas e com poucos parâmetros</h3>
+<p>As operações de <code>Money</code> são curtas e fazem uma coisa só, o que torna o
+tipo previsível e fácil de testar:</p>
+<pre><code>public Money add(Money other) {
+    requireSameCurrency(other);
+    return new Money(amount.add(other.amount), currency);
+}</code></pre>
+
+<h3>Ausência de duplicação</h3>
+<p>Toda aritmética monetária passa por <code>Money</code>. Nenhum serviço soma
+<code>BigDecimal</code> solto ou repete a regra de arredondamento; isso fica em um
+único lugar, junto com a proteção contra somar moedas diferentes.</p>
+
+<h3>Encapsulamento</h3>
+<p>O agregado não deixa o estado vazar. A lista de itens do pedido é devolvida como
+somente leitura, e a única forma de mudar o status é pelos métodos de transição:</p>
+<pre><code>public List&lt;OrderItem&gt; items() {
+    return Collections.unmodifiableList(items);
+}</code></pre>
+
+<h3>Tratamento de erros explícito</h3>
+<p>Erros de negócio têm uma hierarquia própria (<code>DomainException</code>,
+<code>BusinessRuleException</code>, <code>EntityNotFoundException</code>) e são
+traduzidos para HTTP em um único lugar, no formato Problem Details. Os controladores
+não repetem tratamento de erro.</p>
+
+<h3>Comentários que explicam o porquê</h3>
+<p>Os poucos comentários existentes explicam decisões, não o óbvio. Por exemplo, no
+adaptador de persistência do pedido:</p>
+<pre><code>// Itens do pedido nao mudam apos a criacao; atualizar so o status evita duplicar linhas.</code></pre>
+
+<h1>6. Padrões de Projeto GoF</h1>
+<p>Foram aplicados cinco padrões GoF, cada um motivado por um problema concreto do
+sistema. Abaixo, os quatro mais relevantes.</p>
+
+<h2>6.1 State (comportamental)</h2>
+<p><strong>Problema:</strong> o pedido passa por vários estados e cada operação só é
+válida em alguns deles. A primeira versão usava <code>enum</code> + <code>switch</code>
+e a regra de transição se espalhou (ver ADR-004/005).</p>
+<p><strong>Solução:</strong> uma interface <code>OrderState</code> cujas transições,
+por padrão, rejeitam a operação; cada estado concreto sobrescreve apenas as
+transições válidas. O <code>Order</code> delega ao estado atual.</p>
+<pre><code>public interface OrderState {
+    OrderStatus status();
+    default void confirm(Order order) { throw illegalTransition("confirmar"); }
+    default void dispatch(Order order) { throw illegalTransition("despachar"); }
+    // ...
+}
+
+final class CreatedState implements OrderState {
+    public void confirm(Order order) { order.transitionTo(ConfirmedState.INSTANCE); }
+    public void cancel(Order order)  { order.transitionTo(CancelledState.INSTANCE); }
+}</code></pre>
+<p><strong>Análise crítica:</strong> o benefício é grande: cada estado fica coeso,
+transições inválidas são barradas por padrão e adicionar um estado é criar uma
+classe, sem tocar nas demais. O custo é o número maior de classes (uma por estado)
+e a necessidade de reconstruir o estado a partir do status persistido. Vale a pena
+pela clareza e segurança.</p>
+
+<h2>6.2 Strategy (comportamental)</h2>
+<p><strong>Problema:</strong> frete e desconto têm várias políticas, e elas mudam
+com frequência (promoções, mudanças de tarifa).</p>
+<p><strong>Solução:</strong> interfaces <code>DeliveryFeeStrategy</code> e
+<code>DiscountStrategy</code>, com implementações intercambiáveis, combinadas por
+<code>OrderPricing</code> (código na seção 4).</p>
+<p><strong>Análise crítica:</strong> o ganho é poder trocar ou somar políticas sem
+mexer no cálculo do total, e testar cada política isoladamente. O custo é uma
+classe por política e a necessidade de decidir, em algum ponto, qual estratégia
+usar. Esse ponto de decisão ficou contido no serviço de pedido.</p>
+
+<h2>6.3 Adapter + Factory (estrutural + criacional)</h2>
+<p><strong>Problema:</strong> cada forma de pagamento integra com um provedor
+diferente, e o serviço de pedido não deveria conhecer esses detalhes.</p>
+<p><strong>Solução:</strong> uma porta <code>PaymentGateway</code> com um Adapter por
+provedor (Pix, cartão), e uma Factory que escolhe o adapter conforme a forma de
+pagamento. A Factory recebe todos os gateways e os indexa pelo método que cada um
+declara suportar.</p>
+<pre><code>public PaymentGatewayFactory(List&lt;PaymentGateway&gt; gateways) {
+    this.gatewaysByMethod = new EnumMap&lt;&gt;(PaymentMethod.class);
+    for (PaymentGateway gateway : gateways) {
+        gatewaysByMethod.put(gateway.supportedMethod(), gateway);
+    }
+}
+public PaymentGateway forMethod(PaymentMethod method) {
+    PaymentGateway gateway = gatewaysByMethod.get(method);
+    if (gateway == null) throw new BusinessRuleException("Forma de pagamento nao suportada: " + method);
+    return gateway;
+}</code></pre>
+<p><strong>Análise crítica:</strong> registrar um novo provedor passa a ser apenas
+adicionar um bean, sem tocar na Factory nem no serviço (OCP). O custo é uma camada
+de indireção a mais e a responsabilidade de garantir que cada gateway declare
+corretamente o método que atende.</p>
+
+<h2>6.4 Observer (comportamental)</h2>
+<p><strong>Problema:</strong> quando o pedido muda de status, vários interessados
+precisam reagir (cliente, restaurante, métricas), e o módulo de pedidos não deveria
+conhecê-los.</p>
+<p><strong>Solução:</strong> o agregado registra eventos de domínio; um
+<code>DomainEventPublisher</code> os publica via Spring; observadores reagem com
+<code>@EventListener</code>.</p>
+<pre><code>@Component
+class RestaurantNotifier {
+    @EventListener
+    void onStatusChanged(OrderStatusChangedEvent event) {
+        if (event.newStatus() == OrderStatus.CONFIRMED) {
+            log.info("Notificando restaurante: novo pedido {}", event.orderId());
+        }
+    }
+}</code></pre>
+<p><strong>Análise crítica:</strong> o desacoplamento é real: novos canais de
+notificação não tocam no módulo de pedidos. O custo é que o fluxo fica menos
+explícito (a reação acontece via evento) e, como os eventos saem após a
+persistência, garantias mais fortes pediriam listeners transacionais ou um padrão
+outbox em uma próxima iteração.</p>
+
+<h1>7. Design de API</h1>
+<p>O sistema expõe uma API REST, escolhida por ser o estilo mais comum para esse
+tipo de integração e por ter ferramentas maduras de especificação e teste. O
+contrato completo está em <code>/api/openapi.yaml</code> (OpenAPI 3.0.3).</p>
+<h2>7.1 Convenções</h2>
+<ul>
+  <li><strong>Versionamento por URL:</strong> todos os recursos vivem sob
+      <code>/api/v1</code>. Uma mudança incompatível futura iria para
+      <code>/api/v2</code> (ADR-007).</li>
+  <li><strong>Erros em Problem Details (RFC 7807):</strong> respostas de erro trazem
+      <code>status</code>, <code>title</code> e <code>detail</code>; erros de
+      validação incluem um mapa <code>errors</code> por campo.</li>
+  <li><strong>Paginação:</strong> as listagens usam <code>page</code> e
+      <code>size</code> e respondem no envelope <code>PageResponse</code>.</li>
+  <li><strong>Autenticação:</strong> os endpoints de escrita usam, em produção, um
+      token Bearer (JWT), declarado no esquema de segurança do OpenAPI.</li>
+</ul>
+<h2>7.2 Exemplo de erro de validação</h2>
+<pre><code>{
+  "title": "Requisicao invalida",
+  "status": 400,
+  "detail": "Um ou mais campos sao invalidos",
+  "errors": { "items": "must not be empty", "customerId": "must not be blank" }
+}</code></pre>
+<h2>7.3 Principais recursos</h2>
+<table>
+  <tr><th>Método</th><th>Caminho</th><th>Descrição</th></tr>
+  <tr><td>GET/POST</td><td>/api/v1/restaurants</td><td>Lista e cadastra restaurantes</td></tr>
+  <tr><td>POST</td><td>/api/v1/restaurants/{id}/menu-items</td><td>Adiciona item ao cardápio</td></tr>
+  <tr><td>POST</td><td>/api/v1/orders</td><td>Cria um pedido</td></tr>
+  <tr><td>GET</td><td>/api/v1/orders</td><td>Lista pedidos (paginado)</td></tr>
+  <tr><td>POST</td><td>/api/v1/orders/{id}/transitions</td><td>Avança ou cancela o pedido</td></tr>
+</table>
+
+<h1>8. Diagramas e Modelos</h1>
+<p>Os diagramas estão versionados como código (Mermaid) na pasta
+<code>/diagrams</code> e refletem o código implementado.</p>
+
+<h2>8.1 Visão de containers (C4 nível 2)</h2>
+<img class="diagram" src="assets/c4-container.png" alt="C4 container">
+<p class="caption">Figura 1. Módulos do monólito e suas dependências.</p>
+
+<h2>8.2 Padrão State (classes)</h2>
+<img class="diagram" src="assets/class-state.png" alt="Classes do padrão State">
+<p class="caption">Figura 2. O ciclo de vida do pedido com o padrão State.</p>
+
+<h2>8.3 Padrões Adapter e Factory (classes)</h2>
+<img class="diagram" src="assets/class-factory-payment.png" alt="Classes de pagamento">
+<p class="caption">Figura 3. Seleção do gateway de pagamento (Adapter + Factory).</p>
+
+<h2>8.4 Fluxo de criação de pedido (sequência)</h2>
+<img class="diagram" src="assets/sequence-place-order.png" alt="Sequência criar pedido">
+<p class="caption">Figura 4. Sequência do caso de uso central, criar um pedido.</p>
+
+<h1>9. Conclusões</h1>
+<p>O resultado é um sistema que funciona de ponta a ponta e em que cada conceito da
+disciplina tem um ponto concreto no código. A divisão em módulos com Clean
+Architecture deixou o domínio testável sem framework, e os padrões GoF não entraram
+por enfeite: cada um resolveu um problema que tínhamos. O State, em especial, nasceu
+de uma dor real, registrada na reversão da ADR-004 para a ADR-005.</p>
+<p>Avaliando criticamente, a separação entre domínio e persistência cobrou o preço
+esperado em mapeadores e classes a mais, mas pagou em clareza: mudar uma regra de
+preço ou adicionar um estado ficou previsível e local. A máquina de estados e a
+idempotência deram ao fluxo a confiabilidade que era o segundo atributo
+prioritário.</p>
+<p>As limitações são conhecidas. Os gateways de pagamento são simulados; os eventos
+de domínio são publicados após a persistência, sem um outbox que garanta entrega; e
+o esquema do banco é gerado pelo Hibernate, sem migrações versionadas. Numa próxima
+iteração, adotaríamos Flyway para as migrações, um outbox transacional para os
+eventos e testes de contrato sobre o OpenAPI. Se fôssemos recomeçar, manteríamos o
+monólito modular, que se mostrou a escolha certa para o tamanho da equipe, e
+investiríamos mais cedo em testes de integração da camada web.</p>
+
+<h1>10. Referências Bibliográficas</h1>
+<p class="meta">
+GAMMA, E.; HELM, R.; JOHNSON, R.; VLISSIDES, J. <em>Padrões de projeto: soluções
+reutilizáveis de software orientado a objetos</em>. Porto Alegre: Bookman, 2000.<br><br>
+MARTIN, R. C. <em>Código limpo: habilidades práticas do Agile Software</em>. Rio de
+Janeiro: Alta Books, 2009.<br><br>
+MARTIN, R. C. <em>Arquitetura limpa: o guia do artesão para estrutura e design de
+software</em>. Rio de Janeiro: Alta Books, 2019.<br><br>
+FOWLER, M. <em>Patterns of enterprise application architecture</em>. Boston:
+Addison-Wesley, 2002.<br><br>
+RICHARDS, M.; FORD, N. <em>Fundamentals of software architecture: an engineering
+approach</em>. Sebastopol: O'Reilly Media, 2020.<br><br>
+COCKBURN, A. <em>Hexagonal architecture</em>. 2005. Disponível em:
+https://alistair.cockburn.us/hexagonal-architecture/. Acesso em: 6 jun. 2026.<br><br>
+NYGARD, M. <em>Documenting architecture decisions</em>. 2011. Disponível em:
+https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions. Acesso em:
+6 jun. 2026.<br><br>
+ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. <em>ABNT NBR 6023</em>: informação e
+documentação: referências: elaboração. Rio de Janeiro: ABNT, 2018.<br><br>
+INTERNATIONAL ORGANIZATION FOR STANDARDIZATION. <em>ISO/IEC 25010:2023</em>: systems
+and software engineering: systems and software quality requirements and evaluation
+(SQuaRE): product quality model. Geneva: ISO, 2023.
+</p>
+
+<h1>Anexos</h1>
+<ul>
+  <li>Repositório Git (aberto e acessível):
+      <a href="https://github.com/GuilhermeBars/foodflow">https://github.com/GuilhermeBars/foodflow</a></li>
+  <li>Pasta <code>/adrs</code>: os sete ADRs em arquivos Markdown.</li>
+  <li>Pasta <code>/diagrams</code>: as fontes dos diagramas em Mermaid.</li>
+  <li>Pasta <code>/api</code>: a especificação OpenAPI 3.x.</li>
+  <li><code>README.md</code>: instruções de instalação e execução.</li>
+</ul>
+
+</body>
+</html>
