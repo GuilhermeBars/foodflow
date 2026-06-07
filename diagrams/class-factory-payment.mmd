@@ -1,0 +1,20 @@
+%% Padroes Adapter + Factory - selecao de gateway de pagamento
+classDiagram
+    class PaymentService {
+        +pay(PaymentRequest) PaymentResult
+    }
+    class PaymentGatewayFactory {
+        +forMethod(PaymentMethod) PaymentGateway
+    }
+    class PaymentGateway {
+        <<interface>>
+        +supportedMethod() PaymentMethod
+        +charge(PaymentRequest) PaymentResult
+    }
+    class PixGateway
+    class CreditCardGateway
+
+    PaymentService --> PaymentGatewayFactory : seleciona gateway
+    PaymentGatewayFactory --> PaymentGateway : devolve
+    PaymentGateway <|.. PixGateway
+    PaymentGateway <|.. CreditCardGateway

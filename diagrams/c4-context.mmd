@@ -1,0 +1,14 @@
+%% C4 - Nivel 1 (Contexto): FoodFlow e seus atores/sistemas externos
+flowchart TB
+    cliente["Cliente<br/>(app / web)"]
+    restaurante["Operador do restaurante"]
+
+    subgraph sistema["FoodFlow"]
+        api["FoodFlow API<br/>(monolito modular - Spring Boot)"]
+    end
+
+    gateway["Gateway de Pagamento<br/>(Pix / Cartao - externo)"]
+
+    cliente -->|"faz e acompanha pedidos (REST/HTTPS)"| api
+    restaurante -->|"gerencia cardapio e pedidos"| api
+    api -->|"solicita cobranca"| gateway

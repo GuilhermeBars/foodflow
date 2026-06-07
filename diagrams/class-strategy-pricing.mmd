@@ -1,0 +1,30 @@
+%% Padrao Strategy - politicas de frete e desconto na precificacao
+classDiagram
+    class OrderPricing {
+        +quote(subtotal, distanceKm, DeliveryFeeStrategy, DiscountStrategy) PriceQuote
+    }
+
+    class DeliveryFeeStrategy {
+        <<interface>>
+        +calculate(subtotal, distanceKm) Money
+    }
+    class DiscountStrategy {
+        <<interface>>
+        +apply(subtotal) Money
+    }
+
+    class FixedDeliveryFee
+    class DistanceBasedDeliveryFee
+    class FreeAboveThresholdDeliveryFee
+    class NoDiscount
+    class CouponPercentageDiscount
+    class FirstOrderDiscount
+
+    OrderPricing --> DeliveryFeeStrategy : usa
+    OrderPricing --> DiscountStrategy : usa
+    DeliveryFeeStrategy <|.. FixedDeliveryFee
+    DeliveryFeeStrategy <|.. DistanceBasedDeliveryFee
+    DeliveryFeeStrategy <|.. FreeAboveThresholdDeliveryFee
+    DiscountStrategy <|.. NoDiscount
+    DiscountStrategy <|.. CouponPercentageDiscount
+    DiscountStrategy <|.. FirstOrderDiscount

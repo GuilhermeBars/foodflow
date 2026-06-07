@@ -1,0 +1,36 @@
+%% Padrao State - ciclo de vida do pedido
+classDiagram
+    class Order {
+        -OrderState state
+        +confirm()
+        +startPreparing()
+        +dispatch()
+        +deliver()
+        +cancel()
+        +status() OrderStatus
+    }
+
+    class OrderState {
+        <<interface>>
+        +status() OrderStatus
+        +confirm(Order)
+        +startPreparing(Order)
+        +dispatch(Order)
+        +deliver(Order)
+        +cancel(Order)
+    }
+
+    class CreatedState
+    class ConfirmedState
+    class PreparingState
+    class OutForDeliveryState
+    class DeliveredState
+    class CancelledState
+
+    Order --> OrderState : delega
+    OrderState <|.. CreatedState
+    OrderState <|.. ConfirmedState
+    OrderState <|.. PreparingState
+    OrderState <|.. OutForDeliveryState
+    OrderState <|.. DeliveredState
+    OrderState <|.. CancelledState

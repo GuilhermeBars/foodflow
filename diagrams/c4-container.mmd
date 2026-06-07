@@ -1,0 +1,27 @@
+%% C4 - Nivel 2 (Containers/Modulos): organizacao interna do FoodFlow
+flowchart TB
+    cliente["Cliente (app / web)"]
+
+    subgraph foodflow["FoodFlow API (monolito modular)"]
+        catalog["Modulo Catalog<br/>(restaurantes e cardapio)"]
+        ordering["Modulo Ordering<br/>(pedidos + State)"]
+        pricing["Modulo Pricing<br/>(frete e desconto - Strategy)"]
+        payment["Modulo Payment<br/>(Adapter + Factory)"]
+        notification["Modulo Notification<br/>(Observer)"]
+    end
+
+    db[("Banco de Dados<br/>PostgreSQL / H2")]
+    gateway["Gateway de Pagamento (externo)"]
+
+    cliente -->|"REST /api/v1/orders"| ordering
+    cliente -->|"REST /api/v1/restaurants"| catalog
+
+    ordering -->|"consulta cardapio"| catalog
+    ordering -->|"calcula total"| pricing
+    ordering -->|"cobra"| payment
+    ordering -->|"publica eventos de dominio"| notification
+
+    catalog --> db
+    ordering --> db
+    payment --> db
+    payment -->|"integra"| gateway

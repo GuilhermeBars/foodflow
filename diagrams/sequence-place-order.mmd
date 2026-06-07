@@ -1,0 +1,26 @@
+%% Fluxo central: criar um pedido (POST /api/v1/orders)
+sequenceDiagram
+    actor Cliente
+    participant C as OrderController
+    participant S as OrderService
+    participant Cat as CatalogQuery
+    participant P as OrderPricing
+    participant Pay as ProcessPaymentUseCase
+    participant R as OrderRepository
+    participant E as DomainEventPublisher
+    participant N as Observadores
+
+    Cliente->>C: POST /api/v1/orders
+    C->>S: place(command)
+    S->>Cat: getRestaurant(id)
+    Cat-->>S: Restaurant + itens
+    S->>P: quote(subtotal, distancia, frete, desconto)
+    P-->>S: PriceQuote(total)
+    S->>Pay: pay(PaymentRequest)
+    Pay-->>S: PaymentResult(APPROVED)
+    S->>R: save(order)
+    R-->>S: ok
+    S->>E: publishEventsOf(order)
+    E->>N: OrderStatusChangedEvent
+    S-->>C: Order
+    C-->>Cliente: 201 Created
