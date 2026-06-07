@@ -2,8 +2,12 @@ package br.edu.puccampinas.foodflow.shared.web;
 
 import br.edu.puccampinas.foodflow.shared.domain.BusinessRuleException;
 import br.edu.puccampinas.foodflow.shared.domain.EntityNotFoundException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -27,6 +31,17 @@ class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleBadRequest(IllegalArgumentException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Requisicao invalida", ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Requisicao invalida", "Um ou mais campos sao invalidos");
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+        problem.setProperty("errors", errors);
+        return problem;
     }
 
     private ProblemDetail problem(HttpStatus status, String title, String detail) {
