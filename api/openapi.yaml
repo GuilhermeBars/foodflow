@@ -1,0 +1,442 @@
+openapi: 3.0.3
+info:
+  title: FoodFlow API
+  version: 1.0.0
+  description: |
+    API REST da plataforma de delivery FoodFlow.
+
+    Convenções gerais:
+    - **Versionamento por URL**: todos os recursos vivem sob `/api/v1`. Uma
+      mudança incompatível futura seria publicada em `/api/v2`.
+    - **Erros em Problem Details (RFC 7807)**: respostas de erro usam o schema
+      `ProblemDetail`. Erros de validação trazem o mapa `errors` por campo.
+    - **Paginação**: listagens paginadas usam os parâmetros `page` e `size` e
+      respondem no envelope `PageResponse`.
+    - **Autenticação**: endpoints de escrita exigiriam um token Bearer (JWT) em
+      produção (esquema `bearerAuth`).
+  license:
+    name: Uso acadêmico
+
+servers:
+  - url: http://localhost:8080
+    description: Ambiente local (perfil H2)
+
+tags:
+  - name: Catálogo
+    description: Restaurantes e itens de cardápio
+  - name: Pedidos
+    description: Criação e ciclo de vida dos pedidos
+
+paths:
+  /api/v1/restaurants:
+    get:
+      tags: [Catálogo]
+      summary: Lista os restaurantes
+      operationId: listRestaurants
+      responses:
+        "200":
+          description: Lista de restaurantes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RestaurantResponse"
+    post:
+      tags: [Catálogo]
+      summary: Cadastra um restaurante
+      operationId: createRestaurant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRestaurantRequest"
+      responses:
+        "201":
+          description: Restaurante criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/restaurants/{id}:
+    get:
+      tags: [Catálogo]
+      summary: Obtém um restaurante pelo id
+      operationId: getRestaurant
+      parameters:
+        - $ref: "#/components/parameters/PathId"
+      responses:
+        "200":
+          description: Restaurante encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/restaurants/{id}/menu-items:
+    post:
+      tags: [Catálogo]
+      summary: Adiciona um item ao cardápio do restaurante
+      operationId: addMenuItem
+      parameters:
+        - $ref: "#/components/parameters/PathId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemRequest"
+      responses:
+        "201":
+          description: Item adicionado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItemResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/orders:
+    get:
+      tags: [Pedidos]
+      summary: Lista pedidos (paginado)
+      operationId: listOrders
+      parameters:
+        - name: page
+          in: query
+          description: Número da página (zero-based)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Tamanho da página
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+      responses:
+        "200":
+          description: Página de pedidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageOrderResponse"
+    post:
+      tags: [Pedidos]
+      summary: Cria um pedido
+      description: |
+        Monta o pedido com os itens do cardápio, calcula o total (subtotal +
+        frete - desconto) e processa a cobrança de forma idempotente. Se o
+        pagamento for recusado, responde 409.
+      operationId: placeOrder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceOrderRequest"
+      responses:
+        "201":
+          description: Pedido criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/orders/{id}:
+    get:
+      tags: [Pedidos]
+      summary: Obtém um pedido pelo id
+      operationId: getOrder
+      parameters:
+        - $ref: "#/components/parameters/PathId"
+      responses:
+        "200":
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/orders/{id}/transitions:
+    post:
+      tags: [Pedidos]
+      summary: Aplica uma transição de estado ao pedido
+      description: |
+        Avança (ou cancela) o pedido. As transições inválidas para o estado
+        atual respondem 409 (regra de negócio).
+      operationId: applyTransition
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PathId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionRequest"
+      responses:
+        "200":
+          description: Pedido após a transição
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PathId:
+      name: id
+      in: path
+      required: true
+      description: Identificador (UUID) do recurso
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Requisição inválida (validação)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Conflict:
+      description: Conflito com uma regra de negócio
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+  schemas:
+    CreateRestaurantRequest:
+      type: object
+      required: [name, cuisine]
+      properties:
+        name:
+          type: string
+          example: Cantina da Nonna
+        cuisine:
+          type: string
+          example: Italiana
+
+    RestaurantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        cuisine:
+          type: string
+        active:
+          type: boolean
+        menu:
+          type: array
+          items:
+            $ref: "#/components/schemas/MenuItemResponse"
+
+    CreateMenuItemRequest:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          example: Pizza Margherita
+        description:
+          type: string
+          example: Molho, muçarela e manjericão
+        price:
+          type: number
+          format: double
+          minimum: 0
+          example: 49.90
+
+    MenuItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: BRL
+        available:
+          type: boolean
+
+    ItemRequest:
+      type: object
+      required: [menuItemId, quantity]
+      properties:
+        menuItemId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    PlaceOrderRequest:
+      type: object
+      required: [restaurantId, customerId, items, paymentMethod]
+      properties:
+        restaurantId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          example: cliente-42
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ItemRequest"
+        paymentMethod:
+          type: string
+          enum: [PIX, CREDIT_CARD]
+        distanceKm:
+          type: number
+          format: double
+          minimum: 0
+          example: 3.5
+        coupon:
+          type: string
+          nullable: true
+          example: BEMVINDO
+
+    OrderItemResponse:
+      type: object
+      properties:
+        menuItemId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unitPrice:
+          type: number
+          format: double
+        quantity:
+          type: integer
+        lineTotal:
+          type: number
+          format: double
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+        subtotal:
+          type: number
+          format: double
+
+    TransitionRequest:
+      type: object
+      required: [transition]
+      properties:
+        transition:
+          type: string
+          enum: [CONFIRM, START_PREPARING, DISPATCH, DELIVER, CANCEL]
+
+    PageOrderResponse:
+      type: object
+      description: Envelope de paginação (PageResponse) de pedidos
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderResponse"
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+
+    ProblemDetail:
+      type: object
+      description: Erro no formato RFC 7807
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+          example: Requisição inválida
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: Um ou mais campos são inválidos
+        instance:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Presente em erros de validação; mapeia campo para mensagem
